@@ -2,7 +2,7 @@
 
 ### License
 
-Loan Default Risk Prediction is licensed under the terms in [LICENSE](https://github.com/oneapi-src/loan-default-risk-prediction/LICENSE). By contributing to the project, you agree to the license and copyright terms therein and release your contribution under these terms.
+Loan Default Risk Prediction is licensed under the terms in [LICENSE](https://github.com/oneapi-src/loan-default-risk-prediction/blob/main/LICENSE). By contributing to the project, you agree to the license and copyright terms therein and release your contribution under these terms.
 
 ### Sign your work
 
