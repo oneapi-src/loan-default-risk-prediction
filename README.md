@@ -477,7 +477,11 @@ Intel technologies may require enabled hardware, software or service activation.
 
 ## Appendix
 
-### Experimental Setup
+### Experiment setup
+- Testing performed on: October 2022
+- Testing performed by: Intel Corporation
+- Configuration Details: Azure D4v5 (Intel® Xeon® Platinum 8370C CPU @ 2.80GHz), 1 Socket, 2 Cores per Socket, 2 Threads per Core, Turbo:On, Total Memory: 16 GB, OS: Ubuntu 20.04, Kernel: Linux 5.13.0-1031-azure , Software: XGBoost 0.81, XGBoost 1.4.2, daal4py
+
 
 | **Optimized for**:                | **Description**
 | :---                              | :---
