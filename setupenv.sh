@@ -2,7 +2,6 @@
 
 # Copyright (C) 2022 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
-
 # Technology distributions
 PKG_ARRAY=(stock intel)
 PKG_ELEMENTS=${#PKG_ARRAY[@]}

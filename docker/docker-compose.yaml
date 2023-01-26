@@ -1,0 +1,15 @@
+version: "3"
+services:
+  jupyter_server:
+    image: ${USER}/${dir_name}
+    environment:
+      - port=${port}
+    build: 
+      context: ..
+      dockerfile: ./docker/Dockerfile
+    ports:
+      - "${port}:${port}"
+    volumes:
+      - "${dir_path}:/workspace/devkit"
+    stdin_open: true
+    tty: true 
