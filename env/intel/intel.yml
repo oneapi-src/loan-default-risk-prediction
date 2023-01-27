@@ -1,9 +1,14 @@
-name: intel
+name: defaultrisk_intel
 channels:
   - intel
 dependencies:
   - python=3.7
   - intel-aikit-modin=2021.4.1
+  - nb_conda_kernels 
+  - jupyter
+  - ipykernel 
+  - tqdm
   - pip
+  - daal4py<2023.0.0
   - pip:
     - matplotlib==3.5.3
