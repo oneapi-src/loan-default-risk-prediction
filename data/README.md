@@ -44,3 +44,19 @@ If the above kaggle command does not work, do the following
     export KAGGLE_USERNAME=@@@@@@@@$#$#$
     export KAGGLE_KEY=@#@#@#@#@#@#!!@@@@##########
     ```
+
+1) Install kaggle if not done using the below command:  
+    ```bash
+    pip install kaggle
+    ```
+2) Login to Kaggle account. Go to 'Account Tab' & select 'Create a new API token'. This will trigger the download of kaggle.json file. This file contains your API credentials.
+3) Move the downloaded 'kaggle.json' file to the .kaggle folder in your home directory (~/.kaggle/)
+4) Execute the following command:
+    ```bash
+    chmod 600 ~/.kaggle/kaggle.json
+    ```
+5) Export the kaggle username & token to the enviroment, but you may not need this if the API token is placed in the right location
+    ```bash
+    export KAGGLE_USERNAME=@@@@@@@@$#$#$
+    export KAGGLE_KEY=@#@#@#@#@#@#!!@@@@##########
+    ```

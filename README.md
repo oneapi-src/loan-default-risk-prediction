@@ -137,9 +137,7 @@ Computationally, after a model is trained or updated, we will report the followi
 
 As described above, under parity considerations, for these metrics to be independent of the protected variable, the ratio of these values should be around 1.0.  Significant deviations above or below 1.0 may indicate bias that needs to be further investigated.
 
-### Model Inference
 
-The saved model from each model iteration can be used on new data with the same features to infer/predict the probability of a default.  This can be deployed in any number of ways.  When the model is updated on new data, the deployed model can be transitioned over to the new model to make updated inferences given that performance is better and that the model meets the standards of the organization at hand.
 
 ### Software Requirements
 
@@ -152,9 +150,21 @@ To run this reference kit, first clone this repository, which can be done using
 git clone https://www.github.com/oneapi-src/loan-default-risk-prediction
 ```
 
-This reference kit implementation already provides the necessary scripts to setup the above software requirements. To utilize these environment scripts, first install Anaconda/Miniconda by following the instructions at the following link
+We have two options for running our jupyter notebooks, using docker and using anaconda locally. We include instructions for both methods.
+<ul>
+    <li>
+Option 1:
+
+Use Docker, by using docker you just build and run the docker with no additional setup. Instructions for how to use docker can be found [here](docker/README.md)
+</li>
+
+<li>Option 2:
+
+Note that this reference kit implementation already provides the necessary scripts to setup the software requirements. To utilize these environment scripts, first install Anaconda/Miniconda by following the instructions at the following link
 
 https://docs.conda.io/projects/conda/en/latest/user-guide/install/index.html
+</li>
+</ul>
 
 
 ### Reference Solution Setup
@@ -182,151 +192,6 @@ If working on Windows, a conda environment can be manually created using the Ana
 conda env create -n defaultrisk_stock -f env/stock/stock.yml
 ```
 
-### Reference Implementation
-
-In this section, we describe the process of building the reference solution using the scripts that we have provided.
-
-### Model Building Process
-
-The `run_training.py` script *reads the data*, *trains a preprocessor*, and *trains an XGBoost Classifier*, and *saves the model* which can be used for future inference.
-
-The script takes the following arguments:
-
-```shell
-usage: run_training.py [-h] [--intel] [--num_cpu NUM_CPU] [--size SIZE][--trained_model TRAINED_MODEL] [--save_model_path SAVE_MODEL_PATH] --train_file TRAIN_FILE --test_file TEST_FILE
-                       [--logfile LOGFILE] [--estimators ESTIMATORS]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --intel               use intel daal4py for model optimization
-  --num_cpu NUM_CPU     number of cpu cores to use
-  --size SIZE           number of data entries to duplicate data for training and benchmarking. -1 uses the original data size. Default is -1.
-  --trained_model TRAINED_MODEL
-                        saved trained model to incrementally update. If not provided, trains a new model.
-  --save_model_path SAVE_MODEL_PATH
-                        path to save a trained model. If not provided, does not save.
-  --train_file TRAIN_FILE
-                        data file for training
-  --test_file TEST_FILE
-                        data file for testing
-  --logfile LOGFILE     log file to output benchmarking results to.
-  --estimators ESTIMATORS
-                        number of estimators to use.
-```
-
-#### Training the Initial Model
-
-Assuming the structure is set up, we can use this script with the following command to generate and save a brand new trained XGBoost Classifier ready to be used for inference.
-
-```shell
-cd src
-conda activate defaultrisk_stock
-python run_training.py --train_file ../data/batches/credit_risk_train_1.csv --test_file ../data/credit_risk_test.csv --save_model_path ../saved_models/stock/model_1.pkl
-```
-
-The output of this script is a saved model `../saved_models/stock/model_1.pkl`.  In addition, the fairness metrics on a holdout test will also be shown as below:
-
-```bash
-Parity Ratios (Privileged/Non-Privileged):
-        PPV : 0.88
-        FDR : 2.86
-        NPV : 1.11
-        FOMR : 0.31
-        TPR : 0.99
-        FNR : 1.02
-        TNR : 1.00
-        FPR : 0.88
-```
-
-For the `bias_variable` generative process described above, we can see that certain values strongly deviate from 1, indicating that the model may have detected some bias and does not seem to be making equitable predictions between the two groups.  
-
-In comparison, we can adjust the generative process so that the `bias_variable` is explicitly fair independent of the outcome:
-
-    ```
-
-    If the loan is defaulted i.e. prediction class 1:
-      assign bias_variable = 0 or 1 with the probability of 0 being 0.5
-
-    if the loan is not defaulted i.e. prediction class 0:
-      assign bias_variable = 0 or 1 with the probability of 0 being 0.5
-      
-    ```
-
-and the resulting fairness metrics will be:
-
-```bash
-Parity Ratios (Privileged/Non-Privileged):
-        PPV : 1.00
-        FDR : 0.98
-        NPV : 1.00
-        FOMR : 1.03
-        TPR : 0.98
-        FNR : 1.04
-        TNR : 1.00
-        FPR : 0.94
-```
-indicating that the model is not biased along this protected variable.
-
-A thorough investigation of fairness and mitigation of bias is a complex process that *may require multiple iterations of training and retraining the model*, potentially excluding some variables, reweighting samples, and investigation into sources of potential sampling bias.  A few further resources on fairness for ML models, as well as techniques for mitigation include [this guide](https://afraenkel.github.io/fairness-book/intro.html) and [the `shap` package](https://shap.readthedocs.io/en/latest/example_notebooks/overviews/Explaining%20quantitative%20measures%20of%20fairness.html).
-
-#### Updating the Initial Model with New Data (Incremental Learning)
-
-The same script can be used to update the trained XGBoost Classifier with new data.  We can pass in the previously trained model file from above (`../saved_models/stock/model_1.pkl`) and a new dataset file(`../data/batches/credit_risk_train_2.csv`) in the same format as the original dataset to process an incremental update to the existing model and output a new model.  
-
-```shell
-cd src
-conda activate defaultrisk_stock
-python run_training.py --train_file ../data/batches/credit_risk_train_2.csv --test_file ../data/credit_risk_test.csv --trained_model ../saved_models/stock/model_1.pkl --save_model_path ../saved_models/stock/model_2.pkl
-```
-
-The output of this script is a newly saved model `../saved_models/stock/model_2.pkl` as well as new fairness metrics/plots on this model.  This new model can be deployed in the same environment as before and will use this newly updated model.
-
-***The accuracy of this model, trained on the original dataset as described in the instructions above, on a holdout test set reachs ~90% with an AUC of ~0.87.  Incremental updates for this particular dataset maintains the accuracy of this model on a holdout test set at ~90% with an AUC of ~0.87.  This indicates that the model has saturated and that the data is not changing over time either.***
-
-> **Implementation Note:** For an XGBoost Classifier, updating the model using the XGBoost built in functionality simply adds additional boosting rounds/estimators to the model, constructed using only the new data.  This does **not** update existing estimators.  As a result, after every incremental round, the model grows more complex while remembering old estimators.
-
-### Running Inference
-
-To use this model to make predictions on new data, we can use the `run_inference.py` script which takes in a saved model and a dataset to predict on, outputting a json to console with the above format.
-
-The run_inference script takes the following arguments:
-
-```shell
-usage: run_inference.py [-h] [--is_daal_model] [--silent] [--size SIZE]
-                        [--trained_model TRAINED_MODEL] --input_file
-                        INPUT_FILE [--logfile LOGFILE]
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --is_daal_model       toggle if file is daal4py optimized
-  --silent              don't print predictions. used for benchmarking.
-  --size SIZE           number of data entries for eval, used for
-                        benchmarking. -1 is default.
-  --trained_model TRAINED_MODEL
-                        Saved trained model to incrementally update. If None,
-                        trains a new model.
-  --input_file INPUT_FILE
-                        input file for inference
-  --logfile LOGFILE     Log file to output benchmarking results to.
-```
-
-To run inference on a new data file using one of the saved models, included by the above data preparation as 30% of the full training set, `../data/credit_risk_test.csv` we can run the command:
-
-```shell
-cd src
-conda activate defaultrisk_stock
-python run_inference.py --trained_model ../saved_models/stock/model_1.pkl --input_file ../data/credit_risk_test.csv
-```
-
-which outputs a json representation of the predicted probability of default for each row.
-
-Running inference on an incrementally updated model can be done using the same script, only specifying the updated model:
-
-```shell
-cd src
-conda activate defaultrisk_stock
-python run_inference.py --trained_model ../saved_models/stock/model_2.pkl --input_file ../data/credit_risk_test.csv
-```
 
 ## Optimizing the E2E Reference Solution with Intel® oneAPI
 
@@ -380,49 +245,14 @@ Intel® optimizations for XGBoost have been directly upstreamed into the main re
 
 For inference, a trained XGBoost model can be further converted and run using the Intel® oneDAL accelerator in order to utilize Intel® performance optimizations 
 
-#### Model Building Process with Intel® Optimizations
-
-As Intel® optimizations are directly enabled by using XGBoost >v0.81 and the environment setup for the optimized version installs XGBoost v1.4.2, the `run_training.py` script can be run with no code changes otherwise to obtain a saved model with XGBoost v1.4.2. The same training process can be run, optimized with Intel® oneAPI as follows:
-
-```shell
-cd src
-conda activate defaultrisk_intel
-python run_training.py --train_file ../data/batches/credit_risk_train_1.csv --test_file ../data/credit_risk_test.csv --save_model_path ../saved_models/stock/model_1.pkl
+## **Jupyter Notebook Demo**
+You can directly access the Jupyter notebook shared in this repo [here](GettingStarted.ipynb). \
+\
+To launch your own instance, activate either one of the `stock` or `intel` environments created in this readme and execute the following command.
+```sh
+jupyter notebook
 ```
-
-By toggling the `--intel` flag, the same process can also be used to save a **oneDAL optimized model**.  For example, the following command creates 2 saved models:
-
-```shell
-cd src
-conda activate defaultrisk_intel
-python run_training.py --train_file ../data/batches/credit_risk_train_1.csv --test_file ../data/credit_risk_test.csv --save_model_path ../saved_models/intel/model_1.pkl --intel
-```
-
-1. ../saved_models/intel/model_1.pkl 
-    
-    A saved XGBoost v1.4.2 model 
-
-2. ../saved_models/stock/model_1_daal.pkl
-
-    The same model as above, but optimized using oneDAL.
-
-#### Model Inference with Intel® Optimizations
-
-Inference with Intel® optimizations for v1.4.2 can also be enabled simply by using XGBoost >v0.81 as mentioned above.  To run inference on the v1.4.2 model, we can use the same `run_inference.py` script with no modifications to the call, passing in the desired v1.4.2 model:
-
-```shell
-cd src
-conda activate defaultrisk_intel
-python run_inference.py --trained_model ../saved_models/intel/model_1.pkl --input_file ../data/credit_risk_test.csv
-```
-
-To run inference on an Intel® oneDAL optimized model, the same `run_inference.py` script can be used, but the passed in model needs to be the saved daal4py version from training, and the `--is_daal_model` flag should be toggled:
-
-```shell
-cd src
-conda activate defaultrisk_intel
-python run_inference.py --trained_model ../saved_models/intel/model_1_daal.pkl --input_file ../data/credit_risk_test.csv --is_daal_model
-```
+Open `GettingStarted.ipynb` and follow the instructions there to perform training and inference on both the Stock and Intel optimized solutions.
 
 ## Performance Observations
 
